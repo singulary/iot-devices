@@ -1,0 +1,11 @@
+# NODEJS
+node_modules/
+
+# REST
+.rest
+production.rest
+
+# CONFIG FILES
+.env.local
+.vercel
+esp_code/config.h
