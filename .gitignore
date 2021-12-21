@@ -9,3 +9,6 @@ production.rest
 .env.local
 .vercel
 esp_code/config.h
+
+# IDE
+.vscode
