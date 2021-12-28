@@ -4,11 +4,13 @@ node_modules/
 # REST
 .rest
 production.rest
+ardTest.rest
 
 # CONFIG FILES
 .env.local
 .vercel
-esp_code/config.h
+esp32_code/config.h
+nodemcu_code/config.h
 
 # IDE
 .vscode

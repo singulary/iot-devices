@@ -2,7 +2,7 @@
   "name": "iot_devices",
   "version": "1.0.0",
   "main": "src/index.js",
-  "repository": "https://github.com/singulary/fingerprint-project",
+  "repository": "https://github.com/singulary/iot-devices",
   "author": "singulary",
   "license": "MIT",
   "private": true,

@@ -2,7 +2,7 @@ const { Schema, model, models, Types } = require('../database');
 
 const SCHEMA = new Schema(
     {
-        userId: {
+        owner: {
             type: Types.ObjectId,
             required: true,
             ref: 'users'
@@ -11,6 +11,15 @@ const SCHEMA = new Schema(
             type: String,
             default: 'Not nammed',
         },
+        users: [{
+            type: Types.ObjectId,
+            required: false,
+            ref: 'users',
+        }],
+        history: [{
+            type: Types.ObjectId,
+            ref: 'history'
+        }],
         createdAt: {
             type: Date,
             default: Date.now,

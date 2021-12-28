@@ -10,23 +10,40 @@ module.exports = {
 
         const user = await Users.aggregate([
             {
-                "$match": { _id: Types.ObjectId(userId) }
+                $match: { _id: Types.ObjectId(userId) }
             },
             {
-                "$lookup": {
-                    "from": "devices",
-                    "localField": "_id",
-                    "foreignField": "userId",
-                    "as": "devices"
+                $lookup: {
+                    from: "devices",
+                    localField: "_id",
+                    foreignField: "owner",
+                    as: "devicesCollection"
                 }
             },
             {
-                "$project": {
+                $set: {
+                    devices: {
+                        $map: {
+                            input: "$devicesCollection",
+                            as: 'device',
+                            in: {
+                                id: '$$device._id',
+                                name: '$$device.name',
+                                createdAt: '$$device.createdAt',
+                            },
+                        },
+                    },
+                }
+            },
+            {
+                $project: {
                     _id: 0,
+                    email: 0,
                     password: 0,
                     __v: 0,
+                    devicesCollection: 0,
                 }
-            }
+            },
         ]).exec();
 
         if (!(user && user.length > 0))
@@ -35,23 +52,19 @@ module.exports = {
         return res.json({ error: false, data: user[0] });
     },
     getDevices: async (req, res) => {
-        const { userId } = req.user;
+        const { userId: owner } = req.user;
 
-        const devices = await Devices.find({ userId }).exec();
+        const devices = await Devices.find({ owner }).select('name createdAt history').exec();
         if (!(devices && devices.length > 0))
             return res.json({ error: true, log: "No Devices" });
 
         return res.json({ error: false, data: devices });
     },
     addDevice: async (req, res) => {
-        const { userId } = req.user;
+        const { userId: owner } = req.user;
         const { name } = req.body;
 
-        let device;
-        if (!name)
-            device = await Devices.create({ userId });
-        else
-            device = await Devices.create({ userId, name });
+        const device = await Devices.create({ owner, name: name || 'No Name' });
 
         if (!device)
             return res.json({ error: true });
@@ -59,13 +72,13 @@ module.exports = {
         return res.json({ error: false, device: device._id });
     },
     deleteDevice: async (req, res) => {
-        const { userId } = req.user;
+        const { userId: owner } = req.user;
         const { device } = req.body;
 
         if (!device)
             return res.json({ error: true });
 
-        const result = await Devices.deleteOne({ _id: device, userId }).exec();
+        const result = await Devices.deleteOne({ _id: device, owner }).exec();
         if (!(result && result.deletedCount && result.deletedCount > 0))
             return res.json({ error: true });
 
@@ -78,9 +91,19 @@ module.exports = {
         if (!(Types.ObjectId.isValid(deviceId)))
             return res.json({ error: true, log: "Invalid Device" });
 
-        const Device = await Devices.findOne({ _id: deviceId }).exec();
+        const Device = await Devices.findOne({
+            $and: [
+                { _id: deviceId },
+                {
+                    $or: [
+                        { owner: userId },
+                        { users: userId }
+                    ]
+                }
+            ]
+        }).exec();
         if (!Device)
-            return res.json({ error: true, log: "Invalid Device" });
+            return res.json({ error: true, log: "Invalid Device or No Permissions" });
 
         const count = await Tokens.countDocuments({ deviceId: deviceId, userId }).exec();
         if (count > 5)
@@ -93,4 +116,6 @@ module.exports = {
         return res.json({ error: false, token: token.token });
     },
     deleteToken: async (req, res) => { },
+    addPerm: {},
+    removePerm: {},
 };

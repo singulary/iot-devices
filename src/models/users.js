@@ -1,4 +1,4 @@
-const { Schema, model, models } = require('../database');
+const { Schema, model, models, Types } = require('../database');
 const { hash } = require('argon2');
 
 const SCHEMA = new Schema(

@@ -1,7 +1,7 @@
 const { Types } = require('mongoose');
 const { version, validate } = require('uuid');
 const Devices = require('../models/devices');
-const DeviceHistory = require('../models/deviceHistory');
+const DeviceHistory = require('../models/history');
 const Tokens = require('../models/tokens');
 
 module.exports = {

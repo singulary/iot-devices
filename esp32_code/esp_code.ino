@@ -10,6 +10,11 @@
 
 WiFiMulti wifiMulti;
 
+void run_on_request_error()
+{
+    Serial.println("request fail! :\\");
+}
+
 void run_on_sucess()
 {
     Serial.println("sucess! :)");
@@ -21,43 +26,76 @@ void run_on_sucess()
 void run_on_error()
 {
     Serial.println("error! :/");
-    delay(100);
+}
+
+void setClock()
+{
+    configTime(0, 0, "pool.ntp.org");
+
+    Serial.print(F("Waiting for NTP time sync: "));
+    time_t nowSecs = time(nullptr);
+    while (nowSecs < 8 * 3600 * 2)
+    {
+        delay(500);
+        Serial.print(F("."));
+        yield();
+        nowSecs = time(nullptr);
+    }
+
+    Serial.println();
+    struct tm timeinfo;
+    gmtime_r(&nowSecs, &timeinfo);
+    Serial.print(F("Current time: "));
+    Serial.print(asctime(&timeinfo));
 }
 
 class MyCallbacks : public BLECharacteristicCallbacks
 {
+private:
+    String url = SERVER_URL;
+
+public:
     void onWrite(BLECharacteristic *pCharacteristic)
     {
         std::string token = pCharacteristic->getValue();
+        WiFiClientSecure *client;
 
         if (token.length() > 0)
         {
             for (int i = 0; i < token.length(); i++)
                 if (!(isalnum(token[i]) || token[i] == '-'))
-                    return run_on_error();
+                    return run_on_request_error();
 
             while (wifiMulti.run() != WL_CONNECTED)
                 delay(100);
 
-            std::string url = SERVER_URL;
-            url.append(token);
-
             HTTPClient http;
-            http.begin(url.c_str());
+            if (IS_HTTPS)
+            {
+                client = new WiFiClientSecure;
+                if (!client)
+                    return run_on_request_error();
+
+                client->setCACert(HTTPS_CERTIFICATE);
+                http.begin(*client, url + token.c_str());
+            }
+            else
+                http.begin(url + token.c_str());
             http.addHeader("Authorization", DEVICE_ID);
 
             if (http.GET() != HTTP_CODE_OK)
-                return run_on_error();
+                return run_on_request_error();
 
             String payload = http.getString();
             http.end();
+            delete client;
 
             DynamicJsonDocument doc(128);
 
             if (deserializeJson(doc, payload.c_str()))
-                return run_on_error();
+                return run_on_request_error();
 
-            if (doc['error'])
+            if (doc["error"].as<bool>())
                 return run_on_error();
 
             return run_on_sucess();
@@ -72,6 +110,15 @@ void setup()
     wifiMulti.addAP(SSID_PARAMS_1);
     wifiMulti.addAP(SSID_PARAMS_2);
 
+    Serial.print("Waiting for WiFi to connect...");
+    while ((wifiMulti.run() != WL_CONNECTED))
+    {
+        Serial.print(".");
+    }
+    Serial.println(" connected");
+
+    setClock();
+
     BLEDevice::init("GATE-IOT");
     BLEServer *pServer = BLEDevice::createServer();
 
@@ -85,8 +132,4 @@ void setup()
     pAdvertising->start();
 }
 
-void loop()
-{
-    wifiMulti.run();
-    delay(1000);
-}
+void loop() { delay(1000); }

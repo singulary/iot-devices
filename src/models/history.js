@@ -1,32 +1,32 @@
-const { Schema, model, models } = require('../database');
+const { Schema, Types, model, models } = require('../database');
 
 const SCHEMA = new Schema(
     {
         userId: {
-            type: String,
+            type: Types.ObjectId,
             required: true,
-            ref: 'users',
+            ref: 'users'
         },
         deviceId: {
-            type: String,
+            type: Types.ObjectId,
             required: true,
-            ref: 'devices',
+            ref: 'devices'
         },
         createdAt: {
             type: Date,
             default: Date.now,
-            expires: '180d',
-        }
+        },
     },
     {
         toJSON: {
             transform: function (doc, ret) {
+                ret.id = ret._id;
                 delete ret._id;
             }
         }
     }
 );
 
-const DeviceHistory = models.device_history || model("device_history", SCHEMA);
+const History = models.device_history || model("device_history", SCHEMA);
 
-module.exports = DeviceHistory;
+module.exports = History;
