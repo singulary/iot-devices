@@ -17,7 +17,7 @@ module.exports = {
         if (!device)
             return res.json({ error: true, code: 2 });
 
-        const deleted = await Tokens.deleteOne({ userId: device.userId, deviceId: device._id, token: queryToken }).exec();
+        const deleted = await Tokens.deleteOne({ userId: device.owner, deviceId: device._id, token: queryToken }).exec();
         if (!(deleted && deleted.deletedCount && deleted.deletedCount > 0))
             return res.json({ error: true, code: 3 });
 

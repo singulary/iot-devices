@@ -27,7 +27,7 @@ void handleRoot()
 
   if (token.length() < 5)
   {
-    server.send(200, "application/json", "{\"error\":true,\"code\":3}");
+    server.send(200, "application/json", "{\"error\":true,\"code\":4}");
     digitalWrite(LED_BUILTIN, HIGH);
     return;
   }
@@ -35,16 +35,33 @@ void handleRoot()
   while ((WiFi.status() != WL_CONNECTED))
     delay(10);
 
+#if IS_HTTPS
+  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+  client->setInsecure();
+#else
   WiFiClient client;
+#endif
+
   HTTPClient http;
 
+#if IS_HTTPS
+  if (!http.begin(*client, HOST URL_DEVICE_PATH + token))
+#else
   if (!http.begin(client, HOST URL_DEVICE_PATH + token))
+#endif
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
     return;
+  }
 
   http.addHeader("Authorization", AUTHORIZATION);
 
   if (http.GET() != HTTP_CODE_OK)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    server.send(200, "application/json", "{\"error\":true,\"code\":3}");
     return;
+  }
 
   DynamicJsonDocument doc(64);
   DeserializationError error_json = deserializeJson(doc, http.getString());
