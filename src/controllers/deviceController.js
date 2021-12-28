@@ -21,7 +21,7 @@ module.exports = {
         if (!(deleted && deleted.deletedCount && deleted.deletedCount > 0))
             return res.json({ error: true, code: 3 });
 
-        await DeviceHistory.create({ userId: device.onwer, deviceId: device.id });
+        await DeviceHistory.create({ userId: Types.ObjectId(device.onwer), deviceId: Types.ObjectId(device.id) });
 
         return res.json({ error: false, code: 0 });
     }
